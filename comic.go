@@ -1,13 +1,13 @@
 package main
 
-type Comic struct {
+type comic struct {
 	Num        int    `json:"num"`
-	SafeTitle  string `json:"safe_title"`
+	SafeTitle  string `json:"safeTitle"`
 	Img        string `json:"img"`
 	Title      string `json:"title"`
 	Transcript string `json:"transcript"`
 }
 
-type LatestComic struct {
+type latestComic struct {
 	Num int `json:"num"`
 }
