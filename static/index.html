@@ -5,20 +5,29 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>XKCD Comics</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
 </head>
 
 <body class="bg-gray-100">
-    <div class="container mx-auto py-4">
+    <div class="container mx-auto px-4 py-8">
         <h1 class="text-3xl font-bold mb-4">XKCD Comics</h1>
-
-        <div class="mt-4">
-            <button id="hello" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 mr-2 rounded">
-                Press me :D
-            </button>
+        <!-- Pagination buttons -->
+        <div class="flex justify-center space-x-4 mb-4">
+            <a href="/?page={{.PrevPage}}" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">Previous</a>
+            <a href="/?page={{.NextPage}}" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">Next</a>
+        </div>
+        <!-- Display comics -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {{range .Comics}}
+            <div class="bg-white p-4 rounded shadow">
+                <h2 class="text-lg font-semibold mb-2">{{.Title}}</h2>
+                <img src="{{.Img}}" alt="{{.SafeTitle}}" class="w-full h-64 object-cover mb-2">
+                <p class="overflow-hidden overflow-ellipsis">{{.Transcript}}</p>
+            </div>
+            {{end}}
         </div>
     </div>
-    <script src="main.js"></script>
+
 </body>
 
 </html>

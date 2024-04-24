@@ -1,6 +1,6 @@
-package main
+package model
 
-type comic struct {
+type Comic struct {
 	Num        int    `json:"num"`
 	SafeTitle  string `json:"safeTitle"`
 	Img        string `json:"img"`
@@ -8,6 +8,6 @@ type comic struct {
 	Transcript string `json:"transcript"`
 }
 
-type latestComic struct {
+type LatestComic struct {
 	Num int `json:"num"`
 }

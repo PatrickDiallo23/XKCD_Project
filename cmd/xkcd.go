@@ -1,4 +1,4 @@
-package main
+package cmd
 
 import (
 	"encoding/json"
@@ -6,33 +6,34 @@ import (
 	"net/http"
 	"sync"
 	"time"
+	"xkcdcomics/model"
 )
 
 const xkcdURL = "https://xkcd.com/%d/info.0.json"
 
-func getComic(comicNum int) (comic, error) {
+func GetComic(comicNum int) (model.Comic, error) {
 	resp, err := http.Get(fmt.Sprintf(xkcdURL, comicNum))
 	if err != nil {
-		return comic{}, fmt.Errorf("failed to GET comic %d: %s", comicNum, err)
+		return model.Comic{}, fmt.Errorf("failed to GET comic %d: %s", comicNum, err)
 	}
 	defer resp.Body.Close()
 
-	var comicRetrieved comic
+	var comicRetrieved model.Comic
 	if err := json.NewDecoder(resp.Body).Decode(&comicRetrieved); err != nil {
-		return comic{}, fmt.Errorf("failed to GET comic %d: %s", comicNum, err)
+		return model.Comic{}, fmt.Errorf("failed to GET comic %d: %s", comicNum, err)
 	}
 
 	return comicRetrieved, nil
 }
 
-func getLatestComicNumber() (int, error) {
+func GetLatestComicNumber() (int, error) {
 	resp, err := http.Get("https://xkcd.com/info.0.json")
 	if err != nil {
 		return 0, fmt.Errorf("failed to perform GET request: %s", err)
 	}
 	defer resp.Body.Close()
 
-	var latest latestComic
+	var latest model.LatestComic
 	if err := json.NewDecoder(resp.Body).Decode(&latest); err != nil {
 		return 0, fmt.Errorf("failed to unmarshall %d: %s", latest.Num, err)
 	}
@@ -42,11 +43,11 @@ func getLatestComicNumber() (int, error) {
 	return latest.Num, nil
 }
 
-func retrieveComicsSequentially(start, end int) ([]comic, time.Duration) {
-	var comics []comic
+func RetrieveComicsSequentially(start, end int) ([]model.Comic, time.Duration) {
+	var comics []model.Comic
 	startTime := time.Now()
 	for i := start; i <= end; i++ {
-		comic, err := getComic(i)
+		comic, err := GetComic(i)
 		if err != nil {
 			fmt.Printf("Error retrieving sequentially comic %d: %v\n", i, err)
 			continue
@@ -59,8 +60,8 @@ func retrieveComicsSequentially(start, end int) ([]comic, time.Duration) {
 }
 
 // #1 attempt - not very efficient
-func retrieveComicsConcurrently(start, end int) ([]comic, time.Duration) {
-	var comics []comic
+func RetrieveComicsConcurrently(start, end int) ([]model.Comic, time.Duration) {
+	var comics []model.Comic
 	var wg sync.WaitGroup
 	startTime := time.Now()
 
@@ -68,7 +69,7 @@ func retrieveComicsConcurrently(start, end int) ([]comic, time.Duration) {
 		wg.Add(1)
 		go func(num int) {
 			defer wg.Done()
-			comic, err := getComic(num)
+			comic, err := GetComic(num)
 			if err != nil {
 				fmt.Printf("Error retrieving concurrently comic %d: %v\n", num, err)
 				return
@@ -84,9 +85,9 @@ func retrieveComicsConcurrently(start, end int) ([]comic, time.Duration) {
 }
 
 // #2 attempt using proposed solution with a channel and a single writer go routine
-func retrieveComicsConcurrently2(start, end int) ([]comic, time.Duration) {
-	var comics []comic
-	comicCh := make(chan comic, end)
+func RetrieveComicsConcurrently2(start, end int) ([]model.Comic, time.Duration) {
+	var comics []model.Comic
+	comicCh := make(chan model.Comic, end)
 	var getComicsWG sync.WaitGroup
 	var writeWG sync.WaitGroup
 	startTime := time.Now()
@@ -104,7 +105,7 @@ func retrieveComicsConcurrently2(start, end int) ([]comic, time.Duration) {
 		getComicsWG.Add(1)
 		go func(num int) {
 			defer getComicsWG.Done()
-			comic, err := getComic(num)
+			comic, err := GetComic(num)
 			if err != nil {
 				fmt.Printf("Error retrieving concurrently comic %d: %v\n", num, err)
 				return
@@ -126,8 +127,8 @@ func retrieveComicsConcurrently2(start, end int) ([]comic, time.Duration) {
 }
 
 // #3 attempt using Mutex
-func retrieveComicsConcurrently3(start, end int) ([]comic, time.Duration) {
-	var comics []comic
+func RetrieveComicsConcurrently3(start, end int) ([]model.Comic, time.Duration) {
+	var comics []model.Comic
 	var wg sync.WaitGroup
 	var mutex sync.Mutex
 	startTime := time.Now()
@@ -136,7 +137,7 @@ func retrieveComicsConcurrently3(start, end int) ([]comic, time.Duration) {
 		wg.Add(1)
 		go func(num int) {
 			defer wg.Done()
-			comic, err := getComic(num)
+			comic, err := GetComic(num)
 			if err != nil {
 				fmt.Printf("Error retrieving concurrently comic %d: %v\n", num, err)
 				return
