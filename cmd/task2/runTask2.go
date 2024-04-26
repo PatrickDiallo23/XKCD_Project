@@ -44,11 +44,11 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 func RunTask2() {
 	// Set up database
 	var err error
-	cmd.Db, err = cmd.SetupDatabase()
+	err = cmd.SetupDatabase()
 	if err != nil {
 		log.Fatalf("Error setting up database: %v", err)
 	}
-	defer cmd.Db.Close()
+	defer cmd.CloseDBConn()
 
 	// Prepare templates
 	templates, err = template.ParseGlob("static/*.html")
