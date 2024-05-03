@@ -1,15 +1,18 @@
 package task2
 
 import (
+	"encoding/json"
 	"html/template"
 	"log"
 	"net/http"
 	"strconv"
+	"sync"
 	"xkcdcomics/cmd"
 	"xkcdcomics/model"
 )
 
 var templates *template.Template
+var deleteMutex sync.Mutex
 
 func indexHandler(w http.ResponseWriter, r *http.Request) {
 	page, err := strconv.Atoi(r.FormValue("page"))
@@ -41,6 +44,37 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func deleteHandler(w http.ResponseWriter, r *http.Request) {
+
+	deleteMutex.Lock()
+	defer deleteMutex.Unlock()
+
+	// Define the number of comics to delete
+	numToDelete := 10
+
+	// Retrieve 10 random comics from the database
+	randomComics, err := cmd.GetRandomComicsFromDatabase(numToDelete)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Delete the selected comics from the database
+	err = cmd.DeleteComicsFromDatabase(randomComics)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Respond with the deleted comics in JSON format
+	w.Header().Set("Content-Type", "application/json")
+	err = json.NewEncoder(w).Encode(randomComics)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
 func RunTask2() {
 	// Set up database
 	var err error
@@ -61,6 +95,7 @@ func RunTask2() {
 
 	// Set up routes
 	http.HandleFunc("/", indexHandler)
+	http.HandleFunc("/delete", deleteHandler)
 
 	// Start server
 	log.Println("Server started on http://localhost:8080")

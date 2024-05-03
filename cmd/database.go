@@ -142,3 +142,65 @@ func GetComicsFromDatabase(offset, limit int) ([]model.Comic, error) {
 
 	return comics, nil
 }
+
+func GetRandomComicsFromDatabase(numToDelete int) ([]model.Comic, error) {
+	var comics []model.Comic
+
+	// Query the database to select random comics
+	rows, err := db.Query("SELECT num, safeTitle, img, title, transcript FROM comics ORDER BY RANDOM() LIMIT ?", numToDelete)
+	if err != nil {
+		return nil, fmt.Errorf("failed to retrieve random comics from database: %v", err)
+	}
+	defer rows.Close()
+
+	// Iterate over the rows and scan each comic
+	for rows.Next() {
+		var c model.Comic
+		if err := rows.Scan(&c.Num, &c.SafeTitle, &c.Img, &c.Title, &c.Transcript); err != nil {
+			return nil, fmt.Errorf("failed to scan comic row: %v", err)
+		}
+		comics = append(comics, c)
+	}
+
+	return comics, nil
+}
+
+func DeleteComicsFromDatabase(comics []model.Comic) error {
+	// Start a database transaction
+	tx, err := db.Begin()
+	if err != nil {
+		return fmt.Errorf("failed to start database transaction: %v", err)
+	}
+	defer tx.Rollback() // Rollback the transaction if any error occurs
+
+	// Prepare the DELETE statement
+	sqlStr := "DELETE FROM comics WHERE num IN ("
+	placeholders := ""
+	vals := make([]interface{}, len(comics))
+	for i, comic := range comics {
+		placeholders += "?,"
+		vals[i] = comic.Num
+	}
+	// Remove the trailing comma and close the parentheses
+	sqlStr += placeholders[:len(placeholders)-1] + ")"
+
+	// Prepare the statement
+	stmt, err := tx.Prepare(sqlStr)
+	if err != nil {
+		return fmt.Errorf("failed to prepare DELETE statement: %v", err)
+	}
+	defer stmt.Close()
+
+	// Execute the statement with the values
+	_, err = stmt.Exec(vals...)
+	if err != nil {
+		return fmt.Errorf("failed to delete comics from database: %v", err)
+	}
+
+	// Commit the transaction
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit transaction: %v", err)
+	}
+
+	return nil
+}
